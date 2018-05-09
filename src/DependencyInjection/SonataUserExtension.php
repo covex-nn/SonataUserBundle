@@ -35,6 +35,35 @@ class SonataUserExtension extends Extension implements PrependExtensionInterface
      */
     public function prepend(ContainerBuilder $container): void
     {
+        $managerType = 'orm';
+        $userClass = EntityUser::class;
+        foreach ($container->getExtensionConfig('sonata_user') as $config) {
+            if (is_array($config)) {
+                if (isset($config['manager_type'])) {
+                    $managerType = $config['manager_type'];
+                }
+                if (isset($config['class']['user'])) {
+                    $userClass = $config['class']['user'];
+                }
+            }
+        }
+        $container->prependExtensionConfig('fos_user', [
+            'db_driver' => $managerType,
+            'user_class' => $userClass,
+            'firewall_name' => 'main',
+            'group' => [
+                'group_class' => EntityGroup::class,
+                'group_manager' => 'sonata.user.orm.group_manager',
+            ],
+            'from_email' => [
+                'address' => 'no-reply@acme.org',
+                'sender_name' => 'No-reply',
+            ],
+            'service' => [
+                'mailer' => 'fos_user.mailer.twig_swift',
+            ],
+        ]);
+
         if ($container->hasExtension('twig')) {
             // add custom form widgets
             $container->prependExtensionConfig('twig', ['form_themes' => ['@SonataUser/Form/form_admin_fields.html.twig']]);
